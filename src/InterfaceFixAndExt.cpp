@@ -11,8 +11,8 @@ class $modify(MLE_LevelSelectExt, LevelSelectLayer) {
 
     // shared static vars for all LevelSelectLayer objects (same as in namespace declaration).
     inline static int LastPlayedPage, LastPlayedPageLevelID, ForceNextTo;
-    $override void keyDown(cocos2d::enumKeyCodes p0) {
-        LevelSelectLayer::keyDown(p0);
+    $override void keyDown(cocos2d::enumKeyCodes p0, double p1) {
+        LevelSelectLayer::keyDown(p0, p1);
         if (auto scroll = typeinfo_cast<BoomScrollLayer*>(this->m_scrollLayer)) {
             MLE_LevelSelectExt::ForceNextTo = scroll->m_page;
         }
@@ -374,13 +374,14 @@ class $modify(MLE_EditorUI, EditorUI) {
                 }
             );
             //difficulty sprite selector
-            class DiffcltySelector : public Popup<LevelEditorLayer*, std::filesystem::path> {
+            class DiffcltySelector : public Popup {
                 void scrollWheel(float x, float y) override {
                     if (std::fabs(x) > 5.f) if (auto a = m_buttonMenu) if (auto item = a->getChildByType<CCMenuItem>(
                         1 + (x < 0.f)
                     )) item->activate();
                 }
-                bool setup(LevelEditorLayer* editor, std::filesystem::path related_File) override {
+                bool init(LevelEditorLayer* editor, std::filesystem::path related_File) {
+					Popup::init(266.6f, 169.000f);
                     this->setTitle("Select Difficulty Sprite");
                     this->setMouseEnabled(true);
 
@@ -437,7 +438,7 @@ class $modify(MLE_EditorUI, EditorUI) {
             public:
                 static DiffcltySelector* create(LevelEditorLayer* m_editorLayer, std::filesystem::path related_File) {
                     auto ret = new DiffcltySelector();
-                    if (ret->initAnchored(266.6f, 169.000f, m_editorLayer, related_File)) {
+                    if (ret->init(m_editorLayer, related_File)) {
                         ret->autorelease();
                         return ret;
                     }

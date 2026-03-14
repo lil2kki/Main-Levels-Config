@@ -12,7 +12,7 @@
 	"id": "lr70.main-levels-editor",
 	"name": "Main Levels Editor",
 	"developers": [ "lil2kki" ],
-	"description": "customizable thing to change main levels uknowya",
+	"description": "Main Levels editor at runtime based on config",
 
 	"links": {
 		"community": "https://discord.gg/6SxAbk3bTA",

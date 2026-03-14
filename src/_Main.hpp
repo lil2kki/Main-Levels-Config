@@ -186,7 +186,7 @@ protected:
             auto bgSprite = keyValInput->getBGSprite();
             auto bgSize = bgSprite->getContentSize();
             if (auto* tex = CCTextureCache::get()->addImage("groundSquare_18_001.png", false)) {
-                bgSprite->setTexture(tex);
+                //bgSprite->getInsets(tex);//err
             }
             bgSprite->setContentSize(bgSize);
 
@@ -200,6 +200,8 @@ protected:
             ->setGrowCrossAxis(1)
             ->setAxisReverse(1)
         );
+        ((ColumnLayout*)scroll->m_contentLayer->getLayout())->ignoreInvisibleChildren(false);
+        scroll->m_contentLayer->updateLayout();
         scroll->scrollToTop();
 
         auto bottomMenuPaddingX = 6.f;

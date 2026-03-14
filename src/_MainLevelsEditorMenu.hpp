@@ -1,9 +1,9 @@
 #pragma once
 
-class MLE_MainMenu : public geode::Popup<> {
+class MLE_MainMenu : public geode::Popup {
 protected:
-    using FileEvent = Task<Result<std::filesystem::path>>;
-    EventListener<FileEvent> m_listener;
+    //using FileEvent = Task<Result<std::filesystem::path>>;
+    //EventListener<FileEvent> m_listener;
     static auto resolveListEntry(Ref<TextInput> textinput, Ref<GJGameLevel> level) {
         // parse input
         std::string input = textinput->getString();
@@ -170,7 +170,8 @@ protected:
             menu->addChildAtPosition(item, Anchor::Left, { 4.f, -0.f }, !"nopls");
         }
     }
-    bool setup() override {
+    bool init() override {
+        Popup::init(258.000f, 284.000f);
         this->setTitle("");
 
         //menu
@@ -377,10 +378,11 @@ protected:
                     auto IMPORT_PICK_OPTIONS = file::FilePickOptions{
                         std::nullopt, {{ "Extended Shared Level File", { "*.level" } }}
                     };
-                    __this->m_listener.bind([](FileEvent::Event* e) {
-                        if (e->getValue()) {
-                            if (e->getValue()->isOk()) {
-                                auto path = e->getValue()->unwrap();
+                    async::spawn(
+                        file::pick(file::PickMode::OpenFile, IMPORT_PICK_OPTIONS),
+                        [](Result<std::optional<std::filesystem::path>> e) {
+                            if (e.isOk()) {
+                                auto path = e.unwrapOrDefault().value_or("");
                                 auto exist = CCFileUtils::get()->isFileExist(string::pathToString(path).c_str());
                                 if (!string::endsWith(string::pathToString(path), ".level") and !exist) {
                                     path = std::filesystem::path(string::pathToString(path) + ".level");
@@ -419,11 +421,9 @@ protected:
                                     MDPopup::create("Failed to load level!", level_import.err().value_or("UNK ERROR"), "OK")->show();
                                 }
                             }
-                            else log::error("Something went wrong when picking files: {}", e->getValue()->err());
+                            else log::error("Something went wrong when picking files: {}", e.err());
                         }
-                        else log::error("Something went wrong when picking files: Value is empty.");
-                        });
-                    __this->m_listener.setFilter(file::pick(file::PickMode::OpenFile, IMPORT_PICK_OPTIONS));
+                    );
                 }
             );
             if (menu and load_level) {
@@ -438,10 +438,11 @@ protected:
                     auto IMPORT_PICK_OPTIONS = file::FilePickOptions{
                         std::nullopt, {{ "Extended Shared Level File", { "*.level" } }}
                     };
-                    __this->m_listener.bind([](FileEvent::Event* e) {
-                        if (e->getValue()) {
-                            if (e->getValue()->isOk()) {
-                                auto path = e->getValue()->unwrap();
+                    async::spawn(
+                        file::pick(file::PickMode::OpenFile, IMPORT_PICK_OPTIONS),
+                        [](Result<std::optional<std::filesystem::path>> e) {
+                            if (e.isOk()) {
+                                auto path = e.unwrapOrDefault().value_or("");
                                 auto exist = CCFileUtils::get()->isFileExist(string::pathToString(path).c_str());
                                 if (!string::endsWith(string::pathToString(path), ".level") and !exist) {
                                     path = std::filesystem::path(string::pathToString(path) + ".level");
@@ -456,11 +457,9 @@ protected:
                                     MDPopup::create("Failed to load level!", level_import.err().value_or("UNK ERROR"), "OK")->show();
                                 }
                             }
-                            else log::error("Something went wrong when picking files: {}", e->getValue()->err());
+                            else log::error("Something went wrong when picking files: {}", e.err());
                         }
-                        else log::error("Something went wrong when picking files: Value is empty.");
-                        });
-                    __this->m_listener.setFilter(file::pick(file::PickMode::OpenFile, IMPORT_PICK_OPTIONS));
+                    );
                 }
             );
             if (menu and edit_level) {
@@ -537,11 +536,11 @@ protected:
                         getMod()->getConfigDir() / fmt::format("{}.level", level->m_levelID.value()),
                         {{ "Extended Shared Level File", { "*.level" } }}
                     };
-                    __this->m_listener.bind([level](FileEvent::Event* e) {
-                        if (e->getValue()) {
-                            if (e->getValue()->isOk()) {
-                                //path
-                                auto path = e->getValue()->unwrap();
+                    async::spawn(
+                        file::pick(file::PickMode::SaveFile, IMPORT_PICK_OPTIONS),
+                        [level](Result<std::optional<std::filesystem::path>> e) {
+                            if (e.isOk()) {
+                                auto path = e.unwrapOrDefault().value_or("");
                                 path = string::endsWith(string::pathToString(path), ".level"
                                 ) ? string::pathToString(path) : (string::pathToString(path) + ".level");
                                 //dir
@@ -595,14 +594,10 @@ protected:
                                 }
                             }
                             else {
-                                log::error("Something went wrong when picking files: {}", e->getValue()->err());
+                                log::error("Something went wrong when picking files: {}", e.err());
                             }
                         }
-                        else {
-                            log::error("Something went wrong when picking files: Value is empty.");
-                        }
-                        });
-                    __this->m_listener.setFilter(file::pick(file::PickMode::SaveFile, IMPORT_PICK_OPTIONS));
+                    );
                 }
             );
             if (menu and export_level) {
@@ -989,7 +984,7 @@ protected:
             ->setGrowCrossAxis(true)
             ->setCrossAxisOverflow(false)
         );
-        menu->getLayout()->ignoreInvisibleChildren(true); //lol
+        ((ColumnLayout*)menu->getLayout())->ignoreInvisibleChildren(true); //lol
         menu->updateLayout(); //xd ^^^
         limitNodeWidth(menu, this->m_mainLayer->getContentWidth() - 16.f, 1.f, 0.1f);
 
@@ -998,7 +993,7 @@ protected:
 public:
     static MLE_MainMenu* create() {
         auto ret = new MLE_MainMenu();
-        if (ret->initAnchored(258.000f, 284.000f)) {
+        if (ret->init()) {
             ret->autorelease();
             return ret;
         }

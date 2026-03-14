@@ -1,3 +1,6 @@
+# v8.0.0-beta.29
+- Migrated from Geode v4.x to v5.3
+
 # v8.0.0-beta.28
 - Fix char filter in listing settings (allow minus)
 - Add IDs Listing editor

@@ -160,7 +160,8 @@ namespace level {
         json.set("listPosition", level->m_listPosition); //["listPosition"] = level->m_listPosition;
         json.set("songIDs", std::string_view(level->m_songIDs.c_str())); //["songIDs"] = std::string_view(level->m_songIDs.c_str());
         json.set("sfxIDs", std::string_view(level->m_sfxIDs.c_str())); //["sfxIDs"] = std::string_view(level->m_sfxIDs.c_str());"sfxIDs"] = std::string_view(level->m_sfxIDs.c_str());
-        json.set("field_54", level->m_54); //["field_54"] = level->m_54;
+        json.set("songSize", level->m_songSize); //["field_54"] = level->m_54;
+		json.set("field_54", level->m_songSize); //["field_54"] = level->m_54;  //BACKWARD COMPATIBILITY
         json.set("bestTime", level->m_bestTime); //["bestTime"] = level->m_bestTime;
         json.set("bestPoints", level->m_bestPoints); //["bestPoints"] = level->m_bestPoints;
         json.set("platformerSeed", level->m_platformerSeed); //["platformerSeed"] = level->m_platformerSeed;
@@ -289,7 +290,8 @@ namespace level {
         asInt(listPosition);// = json["listPosition"].asInt().unwrapOr();
         asString(songIDs);// = json["songIDs"].asString().unwrapOr().c_str();
         asString(sfxIDs);// = json["sfxIDs"].asString().unwrapOr().c_str();
-        //asInt(54);// = json["field_54"].asInt().unwrapOr();
+        asInt(songSize);// = json["field_54"].asInt().unwrapOr();
+        level->m_songSize = (json.get("field_54").unwrapOr(json).as<int>().unwrapOr(static_cast<int>(level->m_songSize)));;// = json["field_54"].asInt().unwrapOr();
         asInt(bestTime);// = json["bestTime"].asInt().unwrapOr();
         asInt(bestPoints);// = json["bestPoints"].asInt().unwrapOr();
         asInt(platformerSeed);// = json["platformerSeed"].asInt().unwrapOr();
