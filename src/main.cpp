@@ -43,7 +43,7 @@ class $modify(MLE_LocalLevelManager, LocalLevelManager) {
         }
 
         auto path = CCFileUtils::get()->fullPathForFilename(filename.c_str(), !"why");
-		auto read = file::readString(path);
+		auto read = file::readString(path.c_str());
         if (auto err = read.err()) {
             //yea
             log::error("{}.readString: {}", __FUNCTION__, err);
@@ -280,7 +280,7 @@ class $modify(BoomScrollLayerLevelSelectExt, BoomScrollLayer) {
                     ).err()) log::error("{}.writeString: {}", __FUNCTION__, err);
                 }
 				auto path = CCFileUtils::get()->fullPathForFilename(file, !"why");
-                auto read = file::readString(path);
+                auto read = file::readString(path.c_str());
 
 				if (read.err()) {
 					log::error("{}.readString: {}", __FUNCTION__, read.err().value());
@@ -387,9 +387,9 @@ class $modify(MLE_EditorPauseLayer, EditorPauseLayer) {
         auto level = m_editorLayer->m_level;
         if (level->m_levelType == GJLevelType::Main) {
             auto string = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".string.txt").c_str(), !"why");
-			file::writeString(string, level->m_levelString.c_str()).err();
+			file::writeString(string.c_str(), level->m_levelString.c_str()).err();
             auto object = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".object.ini").c_str(), !"why");
-            file::writeString(object, std::string("; Rewrited by ") + (GameManager::get()->m_playerName).c_str()).err();
+            file::writeString(object.c_str(), std::string("; Rewrited by ") + (GameManager::get()->m_playerName).c_str()).err();
             MLE_LevelTools::DefaultLevel = level;
             LevelTools::getLevel(level->m_levelID, true);
 			MLE_LevelTools::DefaultLevel = nullptr;
@@ -513,16 +513,16 @@ class $modify(MLE_EditorUI, EditorUI) {
                     "Here you can reset config and string for level or remove level at all.\n<cr>Both of actions you can't undone and kicks you out editor!</c>",
                     "Reset", "Remove", [level](void*, bool remove) {
                         auto string = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".string.txt").c_str(), !"why");
-                        file::writeString(string, LocalLevelManager::sharedState()->m_mainLevels[level->m_levelID].c_str()).err();
+                        file::writeString(string.c_str(), LocalLevelManager::sharedState()->m_mainLevels[level->m_levelID].c_str()).err();
                         auto object = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".object.ini").c_str(), !"why");
-                        file::writeString(object, std::string("; Reset. Rewrited by ") + (GameManager::get()->m_playerName).c_str()).err();
+                        file::writeString(object.c_str(), std::string("; Reset. Rewrited by ") + (GameManager::get()->m_playerName).c_str()).err();
                         LevelTools::getLevel(level->m_levelID, true);
                         if (remove) {
                             auto path = CCFileUtils::get()->fullPathForFilename("levels/_list.txt", !"why");
-                            auto read = file::readString(path).unwrapOrDefault();
+                            auto read = file::readString(path.c_str()).unwrapOrDefault();
                             auto list = parseListingIDs(read);
                             list.erase(std::remove(list.begin(), list.end(), level->m_levelID.value()), list.end());
-                            file::writeString(path, createListingIDs(list)).err();
+                            file::writeString(path.c_str(), createListingIDs(list)).err();
                         };
                         // kick out of editor yea
                         if (auto editor = GameManager::get()->getEditorLayer()) {
@@ -602,7 +602,7 @@ class $modify(MLE_GameObjectExt, GameObject) {
 
 void openListingEditor() {
     auto path = CCFileUtils::get()->fullPathForFilename("levels/_list.txt", !"why");
-    auto read = file::readString(path).unwrapOrDefault();
+    auto read = file::readString(path.c_str()).unwrapOrDefault();
     auto list = parseListingIDs(read);
 
     Ref pGJLevelList = GJLevelList::create();
