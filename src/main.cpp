@@ -672,7 +672,7 @@ void openListingEditor() {
                     utils::numFromString<int>(id.c_str()).unwrapOrDefault()
                 );
                 auto liststr = createListingIDs(list);
-                file::writeString(path, liststr).err();
+                file::writeString(path.c_str(), liststr.c_str()).err();
                 if (auto l = layer->getChildByType<CCLabelBMFont>(0))
                     l->setString(liststr.c_str());
                 if (auto l = layer->getChildByType<LoadingCircle>(0))
