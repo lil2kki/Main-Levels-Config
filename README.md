@@ -1,173 +1,75 @@
-# Main Levels Editor
+# Main Levels Config
 
-Allows you to control what levels should be in level select layer. 
+![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=downloads) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=version) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=geode_version) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=gd_version) 
 
-developing v8 rn/ 
+Edit main levels at runtime based on config.
 
-im too lazy for it so here is some ai generated info :3
+So.. watch [config dir](https://docs.geode-sdk.org/functions/geode/dirs/getModConfigDir) yea. Or basic [tutorial video](https://youtu.be/VTVOser006E).
 
-## Quick Start
+## Tools i think you would needy for:
 
-### Basic Usage
+Useful tools by this mod and reused **Level Edit** hack from <cb>Eclipse</c> allows you to edit main levels, from me goes full config saving support:
 
-Open Main Levels Editor menu from bottom-right button in Level Select or pause menu.
+<mod:omgrod.rods-fangame-tools>
 
-### Export Level
+**Main Levels Config** allows you load and save coins but this mod **add secret coin to create tab**:
 
-Play any level, pause it, click "Export as .level file" button. Choose where to save.
+<mod:legowiifun.unlisted_objects_in_editor>
 
-The .level file contains:
-- Level data and objects
-- Custom songs (mp3/ogg)
-- Custom sound effects (mp3/ogg)
+## Custom audio assets
 
-### Replace Official Level
+The mod allows you to override/add game's audio assets by placing your own files inside the mod's **config directory**.  
+Supported paths (relative to config dir):
 
-Export your level, rename to `1.level` for Stereo Madness, `2.level` for Back On Track, etc. Put in mod config folder. Reload levels cache from mod menu or restart game.
+- **Audio**: `audio/<id>.mp3` or `audio.<id>.mp3`
+- **SFX**: `sfx/<id>.ogg` or `sfx.<id>.ogg`
+- **Songs**: `songs/<id>.<ext>` or `song.<id>.<ext>`
 
-### Add Custom Level
+The extension (`.mp3` or `.ogg`) must match the original file's extension used by the game.  
+The mod checks these custom locations **before** falling back to default game paths.
 
-Export level, note its ID. Open mod settings, edit "Levels Listing" setting. Add your ID to the list like `1337,1:22,-2,-1`. Reload cache.
+--- 
 
-Or use "Insert to Level List" button in mod menu while playing the level.
+#### <cr>The mod uses Cocos2d's file system. Config dir is NOT the only place - any path added to search priorities works. 
+`Resource packs, geode resources, mod resources root`</c>
 
-### Edit Imported Level
+---
 
-Click edit button on level page (only for imported levels). Opens editor with all tools enabled.
+some more ai generated info that i was too lazy to write myself:
 
-Level Settings shows:
-- Meta data editor (all level properties)
-- Difficulty sprite selector
-- Secret Coins replacement tool
+## Level configuration
 
-Changes save to .level file automatically.
+Each main level can have its own config file: `levels/<id>.object.ini`
 
-## Level Listing Format
+**Supported fields** (section `[GJGameLevel]`):
+- `m_levelName` - level display name
+- `m_difficulty` - 0=Auto,1=Easy,2=Normal,3=Hard,4=Harder,5=Insane,6=Demon
+- `m_stars` - star count
+- `m_audioTrack` / `m_songID` - audio track ID
+- `m_songIDs`, `m_sfxIDs` - lists of custom song/sfx IDs
+- `m_twoPlayerMode` - true/false
+- `m_capacityString` - capacity string
 
-Setting format: `1:22,-2,-1`
+Level string is stored in `levels/<id>.string.txt` (auto-saved when editing in editor).
 
-- Single ID: `1337`
-- Range: `1:22` (levels 1 through 22)
-- Reverse: `22:1` (levels 22 down to 1)
-- Combined: `1337,1:22,-2,-1`
+## Level listing
 
-Special IDs:
-- `-1` = Coming Soon page
-- `-2` = The Tower
+`levels/_list.txt` controls LevelSelectLayer pages format: `1,2,3` or ranges `1:5,7,9:12`
 
-Can override with `LEVELS_LISTING.txt` file in config folder.
+Edit it via **Geode settings button** (gear icon in mod popup) - opens real-time list editor.
 
-## Custom Audio
+## Editor integration
 
-Place files in config folder:
-- `audio/0.mp3` through `audio/21.mp3` for official tracks
-- `songs/{id}.mp3` for custom songs
-- `sfx/{id}.mp3` for sound effects
+When editing a main level:
+- **Gear button** opens config popup (name, difficulty, stars, track)
+- **Coin button** converts all User Coins -> Secret Coins with auto-numbering
+- **Trash button** resets level to default or removes from listing
 
-Edit track info through "Edit tracks" button in mod menu. Use arrows to switch between IDs. Edit artist info through "Edit artists" button.
+## Custom difficulty icons
 
-Audio listing works same as level listing, edit in settings or use `AUDIO_LISTING.txt` file.
+Place `diffIcon_<ID>_btn_001.png` anywhere in search paths to override difficulty sprite.
 
-## Secret Coins
+## Misc
 
-Enable "Type and ID hacks for Secret Coins" setting.
-
-In editor (requires Unlisted Objects in Editor mod):
-- Secret Coins appear in Create Tab
-- Place like normal objects
-- Save as Secret Coins
-
-In gameplay:
-- Secret Coins work like User Coins
-- Collect and save progress normally
-
-Use coin replacement tool in level settings to convert User Coins to Secret Coins.
-
-## Difficulty Sprites
-
-Place `diffIcon_10_btn_001.png` through `diffIcon_99_btn_001.png` in resources folder.
-
-When editing imported level, difficulty selector opens automatically. Use arrows or scroll wheel to change. Saves immediately.
-
-Works with More Difficulties and Demons in Between mods.
-
-## Create Packs
-
-### Texture Pack
-
-Click "In resource pack (TP)" in mod menu. Creates pack with all imported levels and current settings. Opens Texture Loader automatically (desktop only). Pack saved to `geode.texture-loader/packs/` folder.
-
-### Standalone Mod
-
-Click "In modified .geode package". Creates new mod file with all levels included. Saved to mods folder. Disable original mod before using.
-
-## Settings Override
-
-Place `settings.json` in config folder to force settings. Useful for packs. Original settings backed up automatically. Delete file to restore.
-
-## Important Settings
-
-**Remove control UI**: Hide all mod buttons
-
-**Verify level integrity**: Disable to allow modified level strings
-
-**Replace difficulty sprite**: Enable custom difficulty icons
-
-**Type and ID hacks for Secret Coins**: Enable Secret Coins in editor
-
-**The Data Driven Achievements**: External achievement config via `achievements.json`
-
-## File Locations
-
-Config folder contains:
-- `levels/` - Level files
-- `audio.json` - Track metadata
-- `artists.json` - Artist info
-- `settings.json` - Settings override (optional)
-- `achievements.json` - Custom achievements (optional)
-
-Level files checked in order:
-1. `levels/{id}.level`
-2. `levels/{id}.json`
-3. `{id}.level`
-4. `{id}.json`
-
-## Tips
-
-Click "Reload levels cache" after adding new files.
-
-Use .level format to include audio. Use .json for metadata only.
-
-Edit button only works on imported levels. Export first if missing.
-
-Delete button removes level from listing and deletes file.
-
-Page position remembered after playing level.
-
-Export from pause menu includes all audio files automatically.
-
-Meta data editor shows errors inline. Fix JSON syntax if red text appears.
-
-Click file paths in export dialog to open folders (desktop only).
-
-## Mobile Notes
-
-ZIP operations may fail on mobile. Warning shown for affected features.
-
-File browser limited on mobile platforms.
-
-Some buttons disabled if features unavailable.
-
-## Achievement System
-
-Enable "The Data Driven Achievements" setting. Creates `achievements.json` on first run with all vanilla achievements.
-
-Edit JSON to customize. Use `achievements-sort.txt` to reorder. Click reload button in achievements menu to apply changes.
-
-## Compatibility
-
-Works with:
-- Texture Loader (pack creation)
-- Unlisted Objects in Editor (Secret Coins)
-- More Difficulties (custom sprites)
-- Demons in Between (demon tier sprites)
+- Level position is remembered when entering Secret Door / Tower
+- `verifyLevelIntegrity` is bypassed for main levels

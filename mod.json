@@ -1,5 +1,5 @@
 {
-	"geode": "5.3.0",
+	"geode": "5.6.1",
 	"early-load": true,
 	"gd": {
 		"win": "2.2081",
@@ -7,67 +7,15 @@
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-
-	"version": "v8.0.0-beta.29",
-	"id": "lr70.main-levels-editor",
-	"name": "Main Levels Editor",
+	"version": "v1.0.0-beta.1",
+	"id": "lil2kki.main-levels-config",
+	"name": "Main Levels Config",
 	"developers": [ "lil2kki" ],
-	"description": "Main Levels editor at runtime based on config",
-
+	"description": "Edit main levels at runtime based on config",
 	"links": {
 		"community": "https://discord.gg/6SxAbk3bTA",
 		"homepage": "https://t.me/lil2kki_ch",
-		"source": "https://github.com/lil2kki/Main-Levels-Editor"
+		"source": "https://github.com/lil2kki/Main-Levels-Config"
 	},
-	"tags": [ "gameplay", "music", "interface", "utility", "customization", "cheat" ],
-
-	"api": { "include": [ "include/*.hpp" ] },
-	"resources": { "files": [ "resources/*" ] },
-
-	"settings": {
-		"REMOVE_UI": {
-			"name": "Remove control UI",
-			"description": "Remove buttons and other stuff made to control things in game.",
-			"type": "bool",
-			"default": false
-		},
-		"VERIFY_LEVEL_INTEGRITY": {
-			"name": "Verify level integrity",
-			"description": "Disable this to bring back level int verification for some reason...\n\n(if verify fails, it will show \"Load Failed!\" on level load)",
-			"type": "bool",
-			"default": false
-		},
-		"REPLACE_DIFFICULTY_SPRITE": {
-			"name": "Replace difficulty sprite",
-			"description": "Replace the difficulty sprite with a `\ndiffIcon_{level_difficulty:02d}_btn_001.png frame or file`",
-			"type": "bool",
-			"default": true
-		},
-		"TYPE_AND_ID_HACKS_FOR_SECRET_COINS": {
-			"name": "Type and ID hacks for Secret Coins",
-			"description": "Hack around type and id of Secret Coin objects to bypass some game anti-cheat logic. Basically aims to force game add them to level as User Coins.\n\nUse [Unlisted Objects in Editor](mod:legowiifun.unlisted_objects_in_editor) mod by [legowiifun](https://geode-sdk.org/developers/122) to add Secret Coins to Create Tab in Level Editor.",
-			"type": "bool",
-			"default": true
-		},
-		"THE_DATA_DRIVEN_ACHIEVEMENTS": {
-			"name": "The Data Driven Achievements",
-			"type": "bool",
-			"default": true
-		},
-		"LEVELS_LISTING": {
-			"name": "Levels Listing",
-			"description": "# IDs set for level select page.\n\n## Format: \n<cy> - Single ID</c>: -1 (shows one level)\n<co> - Sequence</c>: 1:23 (levels from 1 to 23)\n<cr>Use commas to separate entries!</c>\n\n## Example: \n`\"`<cy>`1337`</c>`,`<co>`1:22`</c>`,`<cy>`-1`</c>,<cy>`-2`</c>`\"` will list level <cy>`1337`</c>, levels <co>`1` through `22`</c>, then <cy>`-1`</c> and <cy>`-2`</c>.\n<cr>\n```\n-1 is coming soon page, and -2, the tower.\n```\n</c>",
-			"type": "string",
-			"filter": "-0123456789,:",
-			"default": "1:22,-2,-1"
-		},
-		"AUDIO_LISTING": {
-			"name": "Audio Listing",
-			"description": "# IDs set for songs list.\nsame as level listing",
-			"type": "string",
-			"filter": "-0123456789,:",
-			"default": "0:21,-1"
-		}
-	}
-
+	"tags": [ "gameplay", "music", "interface", "utility", "customization", "cheat" ]
 }
