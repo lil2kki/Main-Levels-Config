@@ -17,6 +17,107 @@ std::string escENC(std::string str) {
 	return matjson::Value(str).dump().c_str();
 }
 
+namespace FileCache {
+    struct FileResult {
+        std::string content;
+        std::string error;
+        std::filesystem::file_time_type time;
+        bool ok = false;
+    };
+
+    struct IniResult {
+        CSimpleIni ini;
+        SI_Error err = SI_OK;
+        std::string errorStr;
+        std::filesystem::file_time_type time;
+        bool ok = false;
+    };
+
+    inline std::unordered_map<std::string, FileResult> fileCache;
+    inline std::unordered_map<std::string, IniResult> iniCache;
+    inline std::recursive_mutex mtx;
+
+    inline std::filesystem::file_time_type getWriteTime(const std::string& path) {
+        std::error_code ec;
+        return std::filesystem::last_write_time(path, ec);
+    }
+
+    inline FileResult& getText(const std::string& path) {
+        std::lock_guard lock(mtx);
+
+        auto now = getWriteTime(path);
+        auto it = fileCache.find(path);
+
+        if (it != fileCache.end() && it->second.time == now) {
+            return it->second;
+        }
+
+        auto& res = fileCache[path];
+
+        res.time = now;
+        res.ok = false;
+        res.error.clear();
+        res.content.clear();
+
+        auto read = file::readString(path.c_str());
+        if (read.err()) {
+            res.error = read.err().value();
+        }
+        else {
+            res.ok = true;
+            res.content = read.unwrap();
+        }
+
+        return res;
+    }
+
+    inline IniResult& getIni(const std::string& path) {
+        std::lock_guard lock(mtx);
+
+        auto now = getWriteTime(path);
+        auto it = iniCache.find(path);
+
+        if (it != iniCache.end() && it->second.time == now) {
+            return it->second;
+        }
+
+        auto& res = iniCache[path];
+
+        res.time = now;
+        res.ok = false;
+        res.errorStr.clear();
+        res.ini.Reset();
+
+        auto& file = getText(path);
+
+        if (!file.ok) {
+            res.ok = false;
+            res.errorStr = file.error;
+        }
+        else {
+            res.err = res.ini.LoadData(file.content);
+
+            if (res.err < 0) {
+                if (res.err == SI_FAIL) res.errorStr = "Generic failure";
+                else if (res.err == SI_NOMEM) res.errorStr = "Out of memory";
+                else if (res.err == SI_FILE) res.errorStr = std::string("File error\n") + strerror(errno);
+                else res.errorStr = "Unknown error";
+            }
+            else {
+                res.ok = true;
+            }
+        }
+
+        return res;
+    }
+
+    inline void invalidate(const std::string& path) {
+        std::lock_guard lock(mtx);
+        fileCache.erase(path);
+        iniCache.erase(path);
+    }
+}
+
 $execute{
     for (auto path : {
         string::pathToString(Mod::get()->getConfigDir()),
@@ -43,10 +144,9 @@ class $modify(MLE_LocalLevelManager, LocalLevelManager) {
         }
 
         auto path = CCFileUtils::get()->fullPathForFilename(filename.c_str(), !"why");
-		auto read = file::readString(path.c_str());
-        if (auto err = read.err()) {
-            //yea
-            log::error("{}.readString: {}", __FUNCTION__, err);
+        auto& res = FileCache::getText(path);
+        if (!res.ok) {
+            log::error("{}.readString: {}", __FUNCTION__, res.error);
             //whyyy the fuuuuck i done that
             std::string errlevel = R"(kS38,1_110_2_110_3_112_6_1000_7_1_15_0_18_0_8_1|1_0_2_0_3_0_6_1001_7_1_15_0_18_0_8_1|1_0_2_102_3_255_11_255_12_255_13_255_4_-1_6_1009_7_1_15_1_18_0_8_1|1_255_2_255_3_255_6_1002_5_1_7_1_15_0_18_0_8_1|1_40_2_125_3_255_11_255_12_255_13_255_4_-1_6_1013_7_1_15_1_18_0_8_1|1_40_2_125_3_255_11_255_12_255_13_255_4_-1_6_1014_7_1_15_1_18_0_8_1|1_255_2_255_3_255_6_1004_7_1_15_0_18_0_8_1|1_255_2_255_3_255_6_1003_7_1_15_0_18_0_8_1|1_125_2_255_3_0_11_255_12_255_13_255_4_-1_6_1005_5_1_7_1_15_1_18_0_8_1|1_0_2_255_3_255_11_255_12_255_13_255_4_-1_6_1006_5_1_7_1_15_1_18_0_8_1|,kA13,0,kA15,0,kA16,0,kA14,,kA6,0,kA7,0,kA25,0,kA17,0,kA18,0,kS39,0,kA2,1,kA3,0,kA8,0,kA4,0,kA9,0,kA10,0,kA22,1,kA23,0,kA24,0,kA27,0,kA40,0,kA48,0,kA41,0,kA42,0,kA28,0,kA29,0,kA31,0,kA32,0,kA36,0,kA43,0,kA44,0,kA45,0,kA46,0,kA47,0,kA33,0,kA34,0,kA35,0,kA37,0,kA38,0,kA39,0,kA19,0,kA26,0,kA20,0,kA21,0,kA11,0;
 1,2925,2,-45,3,135,155,1,36,1,111,1,112,1,113,20,114,1;
@@ -54,12 +154,12 @@ class $modify(MLE_LocalLevelManager, LocalLevelManager) {
 1,914,2,495,3,135,155,2,128,0.5,129,0.5,31,YXNk;
 1,2899,2,-45,3,165,155,1,36,1,532,1;)";
             errlevel = string::replace(errlevel, "YXNk", ZipUtils::base64URLEncode(
-                "Failed to load " + filename + "!\n" + err.value_or("unk err")
+                "Failed to load " + filename + "!\n" + res.error
             ).c_str());
             return errlevel;
         }
 
-        return read.unwrapOr(LocalLevelManager::getMainLevelString(id));
+        return res.content;
     };
 };
 
@@ -93,8 +193,8 @@ class $modify(MLE_LevelTools, LevelTools) {
 
 		auto path = CCFileUtils::get()->fullPathForFilename(filename.c_str(), !"why");
 
-        CSimpleIni Ini;
-        auto sierr = Ini.LoadFile(path.c_str());
+        auto& iniRes = FileCache::getIni(path);
+        auto& Ini = iniRes.ini;
 
         //m_levelID 
         if (!(Ini.KeyExists("GJGameLevel", "m_levelID"))) Ini.SetLongValue(
@@ -165,16 +265,13 @@ class $modify(MLE_LevelTools, LevelTools) {
         );
         else level->m_capacityString = escDEC(Ini.GetValue("GJGameLevel", "m_capacityString")).c_str();
 
-        if (sierr < 0) {
-            auto err = std::string();
-			if (sierr == SI_FAIL) err = "Generic failure";
-			if (sierr == SI_NOMEM) err = "Out of memory";
-			if (sierr == SI_FILE) err = "File error\n" + std::string(strerror(errno));
-			level->m_levelName = "[INI ERROR]: " + err;
-			level->m_difficulty = GJDifficulty::Harder;
+        if (!iniRes.ok) {
+            level->m_levelName = "[INI ERROR]: " + iniRes.errorStr;
+            level->m_difficulty = GJDifficulty::Harder;
         }
 
         Ini.SaveFile(path.c_str());
+        FileCache::invalidate(path);
 
         return level;
     };
@@ -280,14 +377,14 @@ class $modify(BoomScrollLayerLevelSelectExt, BoomScrollLayer) {
                     ).err()) log::error("{}.writeString: {}", __FUNCTION__, err);
                 }
 				auto path = CCFileUtils::get()->fullPathForFilename(file, !"why");
-                auto read = file::readString(path.c_str());
+                auto read = FileCache::getText(path);
 
-				if (read.err()) {
-					log::error("{}.readString: {}", __FUNCTION__, read.err().value());
+				if (!read.ok) {
+					log::error("{}.readString: {}", __FUNCTION__, read.error);
                     if (layer) queueInMainThread( // hi Node IDs
                         [file, read, layer = Ref(layer)] {
                             auto label = CCLabelBMFont::create(
-                                fmt::format("Error reading {}:\n{}", file, read.err().value()).c_str(),
+                                fmt::format("Error reading {}!\n{}", file, read.error).c_str(),
                                 "bigFont.fnt"
                             );
                             label->setID("err-label"_spr);
@@ -302,7 +399,7 @@ class $modify(BoomScrollLayerLevelSelectExt, BoomScrollLayer) {
 
                 unk3->removeAllObjects();
 
-                for (auto id : parseListingIDs(read.unwrapOr(""))) unk3->addObject(
+                for (auto id : parseListingIDs(read.content)) unk3->addObject(
                     GameLevelManager::get()->getMainLevel(id, 0)
                 );
 
