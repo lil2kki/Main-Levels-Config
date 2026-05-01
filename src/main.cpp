@@ -697,7 +697,7 @@ $on_mod(Loaded) {
                     );
                 }
             }
-            return true;
+            return ListenerResult::Propagate;
         }
     ).leak();
 }
