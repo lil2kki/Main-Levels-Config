@@ -270,8 +270,8 @@ class $modify(MLE_LevelTools, LevelTools) {
             level->m_difficulty = GJDifficulty::Harder;
         }
 
-        Ini.SaveFile(path.c_str());
-        FileCache::invalidate(path);
+        //Ini.SaveFile(path.c_str());
+        //FileCache::invalidate(path);
 
         return level;
     };
