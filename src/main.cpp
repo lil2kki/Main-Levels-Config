@@ -25,7 +25,7 @@ $execute{
     }) CCFileUtils::get()->addPriorityPath(path.c_str());
 };
 
-#ifndef LEVELS_MODIFICATION  
+#ifndef EXCLUDE_MLC_LEVELS_MODIFICATION
 
 #include <Geode/modify/LocalLevelManager.hpp>
 class $modify(MLE_LocalLevelManager, LocalLevelManager) {
@@ -218,9 +218,7 @@ class $modify(MLE_MusicDownloadManager, MusicDownloadManager) {
     }
 };
 
-#endif//LEVELS_MODIFICATION
-
-#ifndef LISTING_OVERTAKE
+#endif//EXCLUDE_MLC_LEVELS_MODIFICATION
 
 inline std::string createListingIDs(const std::vector<int>& list) {
     std::string new_listing;
@@ -261,9 +259,11 @@ inline std::vector<int> parseListingIDs(std::string list) {
     return rtn;
 }
 
+#ifndef EXCLUDE_MLC_LISTING_OVERTAKE
+
 #include <Geode/modify/BoomScrollLayer.hpp>
 class $modify(BoomScrollLayerLevelSelectExt, BoomScrollLayer) {
-    $override static BoomScrollLayer* create(cocos2d::CCArray * pages, int unk1, bool unk2, cocos2d::CCArray * unk3, DynamicScrollDelegate * delegate) {
+    static BoomScrollLayer* create(cocos2d::CCArray * pages, int unk1, bool unk2, cocos2d::CCArray * unk3, DynamicScrollDelegate * delegate) {
         if (delegate and unk3) {
             if (auto layer = exact_cast<LevelSelectLayer*>(delegate)) { //is created for LevelSelectLayer
                 auto file = "levels/_list.txt";
@@ -356,7 +356,7 @@ class $modify(MLE_LevelPageExt, LevelPage) {
         }
     }
 
-    $override bool init(GJGameLevel * level) {
+    bool init(GJGameLevel * level) {
         if (!LevelPage::init(level)) return false;
         return true;
     }
@@ -376,13 +376,63 @@ class $modify(MLE_LevelPageExt, LevelPage) {
     void onTheTower(CCObject * sender) { saveCurrentPageForForceNextTo(); LevelPage::onTheTower(sender); }
 };
 
-#endif//LISTING_OVERTAKE
+#endif//EXCLUDE_MLC_LISTING_OVERTAKE
 
-#ifndef RANDOM_SHIT
+#ifndef EXCLUDE_MLC_SECRET_COIN_OBJECTS_HACK
+
+#include <Geode/modify/GameObject.hpp>
+class $modify(MLE_GameObjectExt, GameObject) {
+    void customSetup(float) { customSetup(); };
+    void customSetup() {
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectID"))) this->m_objectID = v->getTag();
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectType"))) this->m_objectType = (GameObjectType)v->getTag();
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_savedObjectType"))) this->m_savedObjectType = (GameObjectType)v->getTag();
+        GameObject::customSetup();
+    };
+    void PlayLayerCustomSetup(float) {
+        if (auto play = typeinfo_cast<PlayLayer*>(this)) {
+            auto lvl = play->m_level;
+            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_localOrSaved"))) lvl->m_localOrSaved = v->getTag();
+            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_levelType"))) lvl->m_levelType = (GJLevelType)v->getTag();
+        }
+    };
+    static auto valTagContainerObj(int val) { auto a = new CCObject(); a->autorelease(); a->setTag(val); return a; };
+    static GameObject* objectFromVector(
+        gd::vector<gd::string>&p0, gd::vector<void*>&p1, GJBaseGameLayer * p2, bool p3
+    ) {
+        auto rtn = GameObject::objectFromVector(p0, p1, p2, p3);
+        if (!rtn) return rtn;
+        if (auto editor = typeinfo_cast<LevelEditorLayer*>(p2)) {
+            if (rtn) if (rtn->m_objectID == 142) {
+                rtn->setUserObject("org-"_spr + std::string("m_objectID"), valTagContainerObj(rtn->m_objectID));
+                rtn->m_objectID = 1329; //user coin object id
+                rtn->setUserObject("org-"_spr + std::string("m_objectType"), valTagContainerObj((int)rtn->m_objectType));
+                rtn->m_objectType = GameObjectType::UserCoin; //user coin object
+                rtn->setUserObject("org-"_spr + std::string("m_savedObjectType"), valTagContainerObj((int)rtn->m_savedObjectType));
+                rtn->m_savedObjectType = GameObjectType::UserCoin; //what
+                rtn->scheduleOnce(schedule_selector(MLE_GameObjectExt::customSetup), 0.f);
+            }
+        };
+        if (auto play = typeinfo_cast<PlayLayer*>(p2)) {
+            if (rtn) if (rtn->m_objectID == 142) {
+                auto lvl = play->m_level;
+                lvl->setUserObject("org-"_spr + std::string("m_localOrSaved"), valTagContainerObj(lvl->m_localOrSaved));
+                lvl->m_localOrSaved = true;
+                lvl->setUserObject("org-"_spr + std::string("m_levelType"), valTagContainerObj((int)lvl->m_levelType));
+                lvl->m_levelType = GJLevelType::Main;
+                play->scheduleOnce(schedule_selector(MLE_GameObjectExt::PlayLayerCustomSetup), 0.f);
+            }
+        }
+        return rtn;
+    }
+};
+#endif//EXCLUDE_MLC_SECRET_COIN_OBJECTS_HACK
+
+#ifndef EXCLUDE_MLC_INGAME_CONFIG_SUPPORT
 
 #include <Geode/modify/EditorPauseLayer.hpp>
 class $modify(MLE_EditorPauseLayer, EditorPauseLayer) {
-    $override void saveLevel() {
+    void saveLevel() {
         EditorPauseLayer::saveLevel();
         auto level = m_editorLayer->m_level;
         if (level->m_levelType == GJLevelType::Main) {
@@ -408,7 +458,7 @@ class $modify(MLE_EditorUI, EditorUI) {
         pop->m_scene = (this);
         pop->show();
     }
-    $override bool init(LevelEditorLayer * editorLayer) {
+    bool init(LevelEditorLayer * editorLayer) {
         if (!EditorUI::init(editorLayer)) return false;
         if (m_editorLayer->m_level->m_levelType == GJLevelType::Main) scheduleOnce(
             schedule_selector(MLE_EditorUI::showInfoPopup), 0.f
@@ -553,53 +603,6 @@ class $modify(MLE_EditorUI, EditorUI) {
     }
 };
 
-#include <Geode/modify/GameObject.hpp>
-class $modify(MLE_GameObjectExt, GameObject) {
-    void customSetup(float) { customSetup(); };
-    void customSetup() {
-        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectID"))) this->m_objectID = v->getTag();
-        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectType"))) this->m_objectType = (GameObjectType)v->getTag();
-        if (auto v = this->getUserObject("org-"_spr + std::string("m_savedObjectType"))) this->m_savedObjectType = (GameObjectType)v->getTag();
-        GameObject::customSetup();
-    };
-    void PlayLayerCustomSetup(float) {
-        if (auto play = typeinfo_cast<PlayLayer*>(this)) {
-            auto lvl = play->m_level;
-            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_localOrSaved"))) lvl->m_localOrSaved = v->getTag();
-            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_levelType"))) lvl->m_levelType = (GJLevelType)v->getTag();
-        }
-    };
-    static auto valTagContainerObj(int val) { auto a = new CCObject(); a->autorelease(); a->setTag(val); return a; };
-    static GameObject* objectFromVector(
-        gd::vector<gd::string>&p0, gd::vector<void*>&p1, GJBaseGameLayer * p2, bool p3
-    ) {
-        auto rtn = GameObject::objectFromVector(p0, p1, p2, p3);
-        if (!rtn) return rtn;
-        if (auto editor = typeinfo_cast<LevelEditorLayer*>(p2)) {
-            if (rtn) if (rtn->m_objectID == 142) {
-                rtn->setUserObject("org-"_spr + std::string("m_objectID"), valTagContainerObj(rtn->m_objectID));
-                rtn->m_objectID = 1329; //user coin object id
-                rtn->setUserObject("org-"_spr + std::string("m_objectType"), valTagContainerObj((int)rtn->m_objectType));
-                rtn->m_objectType = GameObjectType::UserCoin; //user coin object
-                rtn->setUserObject("org-"_spr + std::string("m_savedObjectType"), valTagContainerObj((int)rtn->m_savedObjectType));
-                rtn->m_savedObjectType = GameObjectType::UserCoin; //what
-                rtn->scheduleOnce(schedule_selector(MLE_GameObjectExt::customSetup), 0.f);
-            }
-        };
-        if (auto play = typeinfo_cast<PlayLayer*>(p2)) {
-            if (rtn) if (rtn->m_objectID == 142) {
-                auto lvl = play->m_level;
-                lvl->setUserObject("org-"_spr + std::string("m_localOrSaved"), valTagContainerObj(lvl->m_localOrSaved));
-                lvl->m_localOrSaved = true;
-                lvl->setUserObject("org-"_spr + std::string("m_levelType"), valTagContainerObj((int)lvl->m_levelType));
-                lvl->m_levelType = GJLevelType::Main;
-                play->scheduleOnce(schedule_selector(MLE_GameObjectExt::PlayLayerCustomSetup), 0.f);
-            }
-        }
-        return rtn;
-    }
-};
-
 void openListingEditor() {
     auto path = CCFileUtils::get()->fullPathForFilename("levels/_list.txt", !"why");
     auto read = file::readString(path.c_str()).unwrapOrDefault();
@@ -702,4 +705,4 @@ $on_mod(Loaded) {
     ).leak();
 }
 
-#endif 
+#endif//EXCLUDE_MLC_INGAME_CONFIG_SUPPORT
