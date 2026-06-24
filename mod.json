@@ -1,5 +1,5 @@
 {
-	"geode": "5.6.1",
+	"geode": "5.7.1",
 	"early-load": true,
 	"gd": {
 		"win": "2.2081",
