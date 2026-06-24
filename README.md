@@ -12,10 +12,6 @@ Useful tools by this mod and reused **Level Edit** hack from <cb>Eclipse</c> all
 
 <mod:omgrod.rods-fangame-tools>
 
-**Main Levels Config** allows you load and save coins but this mod **add secret coin to create tab**:
-
-<mod:legowiifun.unlisted_objects_in_editor>
-
 ## Custom audio assets
 
 The mod allows you to override/add game's audio assets by placing your own files inside the mod's **config directory**.  
