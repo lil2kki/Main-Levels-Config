@@ -1,20 +1,20 @@
 {
-	"geode": "5.7.1",
+	"geode": "6.0.0",
 	"early-load": true,
 	"gd": {
-		"win": "2.2081",
-		"android": "2.2081",
-		"mac": "2.2081",
-		"ios": "2.2081"
+		"win": "2.2091",
+		"android": "2.2091",
+		"mac": "2.2091",
+		"ios": "2.2091"
 	},
-	"version": "v1.0.0-beta.5",
+	"version": "v1.0.0-beta.6",
 	"id": "lil2kki.main-levels-config",
 	"name": "Main Levels Config",
 	"developers": [ "lil2kki" ],
-	"description": "Edit main levels at runtime based on config",
+	"description": "Edit main levels at runtime based on config!",
 	"links": {
-		"community": "https://discord.gg/6SxAbk3bTA",
-		"homepage": "https://t.me/lil2kki_ch",
+		"homepage": "https://t.me/thaLILNIKKI",
+		"community": "https://discord.gg/kXjQ8QEWNU",
 		"source": "https://github.com/lil2kki/Main-Levels-Config"
 	},
 	"tags": [ "gameplay", "music", "interface", "utility", "customization", "cheat" ]

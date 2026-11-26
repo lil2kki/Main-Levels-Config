@@ -19,9 +19,9 @@ std::string escENC(std::string str) {
 
 $execute{
     for (auto path : {
-        string::pathToString(Mod::get()->getConfigDir()),
-        string::pathToString(Mod::get()->getSaveDir()),
-        string::pathToString(Mod::get()->getTempDir())
+        (Mod::get()->getConfigDir()),
+        (Mod::get()->getSaveDir()),
+        (Mod::get()->getTempDir())
     }) CCFileUtils::get()->addPriorityPath(path.c_str());
 };
 
@@ -29,14 +29,14 @@ $execute{
 
 #include <Geode/modify/LocalLevelManager.hpp>
 class $modify(MLE_LocalLevelManager, LocalLevelManager) {
-    gd::string getMainLevelString(int id) {
+    std::string getMainLevelString(int id) {
         //log::debug("{}({})", __FUNCTION__, id);
 
         auto filename = "levels/" + utils::numToString(id) + ".string.txt";
         CCFileUtils::get()->m_fullPathCache.erase(filename.c_str());
         if (!fileExists(filename.c_str())) {
             auto newfp = Mod::get()->getConfigDir() / filename;
-            file::createDirectoryAll(newfp.parent_path()).err();
+            file::createDirectoryAll(newfp.parent().value_or("")).err();
             if (auto err = file::writeString(
                 newfp, LocalLevelManager::getMainLevelString(id).c_str()
             ).err()) log::error("{}.writeString: {}", __FUNCTION__, err);
@@ -54,7 +54,7 @@ class $modify(MLE_LocalLevelManager, LocalLevelManager) {
 1,914,2,495,3,135,155,2,128,0.5,129,0.5,31,YXNk;
 1,2899,2,-45,3,165,155,1,36,1,532,1;)";
             errlevel = string::replace(errlevel, "YXNk", ZipUtils::base64URLEncode(
-                "Failed to load " + filename + "!\n" + err.value_or("unk err")
+                "Failed to load " + filename + "!\n" + err.value().toString()
             ).c_str());
             return errlevel;
         }
@@ -75,6 +75,7 @@ class $modify(MLE_LevelTools, LevelTools) {
         if (levelID == -2) level->m_levelName = "{The Tower Page}";
 
         level->m_levelID = levelID; // -1, -2 for listing exists. no default id pls
+        level->m_levelType = DefaultLevel == level ? level->m_levelType : GJLevelType::Main;
 
         if (levelID < 0) return level;
 
@@ -83,7 +84,7 @@ class $modify(MLE_LevelTools, LevelTools) {
         if (!fileExists(filename.c_str())) {
             // Create default ini file
             auto newfp = Mod::get()->getConfigDir() / filename;
-            file::createDirectoryAll(newfp.parent_path()).err();
+            file::createDirectoryAll(newfp.parent().value_or("")).err();
             if (auto err = file::writeString(
                 newfp, "; Automatically generated."
             ).err()) log::error("{}.writeString: {}", __FUNCTION__, err);
@@ -178,10 +179,10 @@ class $modify(MLE_LevelTools, LevelTools) {
 
         return level;
     };
-    static bool verifyLevelIntegrity(gd::string p0, int p1) {
+    static bool verifyLevelIntegrity(std::string p0, int p1) {
         return true;
     }
-    static gd::string getAudioFileName(int p0) {
+    static std::string getAudioFileName(int p0) {
         //log::debug("{}:{}({})", __func__, __LINE__, p0);
         if (auto as = fmt::format("audio.{}.mp3", p0); fileExists(as.c_str())) return as.c_str();
         if (auto as = fmt::format("audio/{}.mp3", p0); fileExists(as.c_str())) return as.c_str();
@@ -191,7 +192,7 @@ class $modify(MLE_LevelTools, LevelTools) {
 
 #include <Geode/modify/MusicDownloadManager.hpp>
 class $modify(MLE_MusicDownloadManager, MusicDownloadManager) {
-    gd::string pathForSFX(int id) {
+    std::string pathForSFX(int id) {
         //log::debug("{}:{}({})", __func__, __LINE__, id);
         std::filesystem::path ref = MusicDownloadManager::pathForSFX(id).c_str();
         if (auto as = fmt::format("sfx/{}{}", id, ref.extension()); fileExists(as.c_str())) {
@@ -202,7 +203,7 @@ class $modify(MLE_MusicDownloadManager, MusicDownloadManager) {
         }
         return MusicDownloadManager::pathForSFX(id);
     };
-    gd::string pathForSong(int id) {
+    std::string pathForSong(int id) {
         //log::debug("{}:{}({})", __func__, __LINE__, id);
         if (auto sc = CCScene::get())
             if (sc->getChildByType<LoadingLayer>(0))
@@ -270,7 +271,7 @@ class $modify(BoomScrollLayerLevelSelectExt, BoomScrollLayer) {
                 CCFileUtils::get()->m_fullPathCache.erase(file);
                 if (!fileExists(file)) { // Create default file
                     auto path = Mod::get()->getConfigDir() / file;
-                    file::createDirectoryAll(path.parent_path()).err();
+                    file::createDirectoryAll(path.parent().value_or("")).err();
                     //fuck
                     std::vector<int> ids;
                     for (auto level : unk3->asExt<GJGameLevel*>()) ids.push_back(level->m_levelID);
@@ -380,12 +381,14 @@ class $modify(MLE_LevelPageExt, LevelPage) {
 
 #ifndef EXCLUDE_MLC_INGAME_CONFIG_SUPPORT
 
-#include <Geode/modify/EditorPauseLayer.hpp>
-class $modify(MLE_EditorPauseLayer, EditorPauseLayer) {
-    void saveLevel() {
-        EditorPauseLayer::saveLevel();
-        auto level = m_editorLayer->m_level;
-        if (level->m_levelType == GJLevelType::Main) {
+#define isMainLevel(level) level->m_levelType == GJLevelType::Main or (level->getUserObject("main-level"))
+
+#include <Geode/modify/LevelEditorLayer.hpp>
+class $modify(MLE_LevelEditorLayer, LevelEditorLayer) {
+    bool saveLevel() {
+        auto asd = LevelEditorLayer::saveLevel();
+        auto level = m_level;
+        if (isMainLevel(level)) {
             auto string = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".string.txt").c_str(), !"why");
             file::writeString(string.c_str(), level->m_levelString.c_str()).err();
             auto object = CCFileUtils::get()->fullPathForFilename(("levels/" + utils::numToString(level->m_levelID.value()) + ".object.ini").c_str(), !"why");
@@ -393,7 +396,9 @@ class $modify(MLE_EditorPauseLayer, EditorPauseLayer) {
             MLE_LevelTools::DefaultLevel = level;
             LevelTools::getLevel(level->m_levelID, true);
             MLE_LevelTools::DefaultLevel = nullptr;
+            Notification::create("Level saved and files updated!", NotificationIcon::Success)->show();
         }
+        return asd;
     }
 };
 
@@ -401,25 +406,27 @@ class $modify(MLE_EditorPauseLayer, EditorPauseLayer) {
 class $modify(MLE_EditorUI, EditorUI) {
     void showInfoPopup(float = 0.f) {
         auto pop = MDPopup::create(
-            "Main Level Config Editor",
-            "* Level settings button open special tools.""\n"
-            "* Saving actually writes files.", "OK"
+            "Main Level Config Editor!"
+            ,
+            "Note:" "\n"
+            "* Level settings button open special tools." "\n"
+            "* Saving actually writes files." "\n"
+            "\n"
+            "This message says you actually edit main level..."
+            , 
+            "OK"
         );
         pop->m_scene = (this);
         pop->show();
     }
     bool init(LevelEditorLayer * editorLayer) {
         if (!EditorUI::init(editorLayer)) return false;
-        if (m_editorLayer->m_level->m_levelType == GJLevelType::Main) scheduleOnce(
+        if (isMainLevel(m_editorLayer->m_level)) scheduleOnce(
             schedule_selector(MLE_EditorUI::showInfoPopup), 0.f
         );
         return true;
     }
     void openSetupWindows(float = 0.f) {
-        //what the fuck
-        if (!CCScene::get()->getChildByType<LevelSettingsLayer>(0)) {
-            LevelSettingsLayer::create(m_editorLayer->m_levelSettings, m_editorLayer)->show();
-        }
         auto popup = createQuickPopup(
             "Main Level Config",
             "\n \n \n \n \n \n",
@@ -431,16 +438,18 @@ class $modify(MLE_EditorUI, EditorUI) {
         m_levelNameINP->setCallback([level](auto& str) { level->m_levelName = escDEC(str).c_str(); });
         m_levelNameINP->setString(escENC(level->m_levelName.c_str()).c_str());
         m_levelNameINP->setPosition({ 0.f, 115.000f });
-        m_levelNameINP->getInputNode()->addChild(SimpleTextArea::create("Level Name:\n \n \n ", "bigFont.fnt", 0.5f), 0, 100);
-        m_levelNameINP->getInputNode()->m_allowedChars = " !\"#$ % &'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        m_levelNameINP->addChild(SimpleTextArea::create("Level Name:\n \n \n ", "bigFont.fnt", 0.5f), 0, 100);
+        m_levelNameINP->getChildByType<SimpleTextArea>()->setAnchorPoint({ 0.f, 0.3f });
+        m_levelNameINP->setFilter(" !\"#$ % &'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
         popup->m_buttonMenu->addChild(m_levelNameINP);
         //m_difficulty
         auto m_difficultyINP = TextInput::create(67.f, "");
         m_difficultyINP->setCallback([level](auto& str) { level->m_difficulty = (GJDifficulty)utils::numFromString<int>(str).unwrapOr((int)level->m_difficulty); });
         m_difficultyINP->setString(utils::numToString((int)level->m_difficulty).c_str());
         m_difficultyINP->setPosition({ -110.000, 65.000f });
-        m_difficultyINP->getInputNode()->addChild(SimpleTextArea::create("Diff:\n \n \n ", "bigFont.fnt", 0.5f, 67.f), 0, 100);
-        m_difficultyINP->getInputNode()->m_allowedChars = "0123456789";
+        m_difficultyINP->addChild(SimpleTextArea::create("Diff:\n \n \n ", "bigFont.fnt", 0.5f, 67.f), 0, 100);
+        m_difficultyINP->getChildByType<SimpleTextArea>()->setAnchorPoint({0.f, 0.3f});
+        m_difficultyINP->setFilter("0123456789");
         Ref diffprev = CCSprite::create();
         diffprev->runAction(CCRepeatForever::create(CCSequence::create(CallFuncExt::create(
             [diffprev, level] {
@@ -456,24 +465,26 @@ class $modify(MLE_EditorUI, EditorUI) {
                 }
             }
         ), CCDelayTime::create(0.1f), nullptr)));
-        diffprev->setPosition({ 33.000f, 15.000f });
-        m_difficultyINP->getInputNode()->addChild(diffprev);
+        diffprev->setPosition({ 71.000f, 14.000f });
+        m_difficultyINP->addChild(diffprev);
         popup->m_buttonMenu->addChild(m_difficultyINP);
         //m_stars
         auto m_starsINP = TextInput::create(67.f, "");
         m_starsINP->setCallback([level](auto& str) { level->m_stars = utils::numFromString<int>(str).unwrapOr(level->m_stars.value()); });
         m_starsINP->setString(utils::numToString(level->m_stars.value()).c_str());
         m_starsINP->setPosition({ -110.000, 15.000f });
-        m_starsINP->getInputNode()->addChild(SimpleTextArea::create("Stars:\n \n \n ", "bigFont.fnt", 0.5f, 67.f), 0, 100);
-        m_starsINP->getInputNode()->m_allowedChars = "0123456789";
+        m_starsINP->addChild(SimpleTextArea::create("Stars:\n \n \n ", "bigFont.fnt", 0.5f, 67.f), 0, 100);
+        m_starsINP->getChildByType<SimpleTextArea>()->setAnchorPoint({ 0.f, 0.3f });
+        m_starsINP->setFilter("0123456789");
         popup->m_buttonMenu->addChild(m_starsINP);
         //m_audioTrack
         auto m_audioTrackINP = TextInput::create(180.f, "");
         m_audioTrackINP->setCallback([level](auto& str) { level->m_audioTrack = utils::numFromString<int>(str).unwrapOr(level->m_audioTrack); });
         m_audioTrackINP->setString(utils::numToString(level->m_audioTrack).c_str());
         m_audioTrackINP->setPosition({ 58.000f, 56.000f });
-        m_audioTrackINP->getInputNode()->addChild(SimpleTextArea::create("Track:\n \n \n ", "bigFont.fnt", 0.5f, 180.f), 0, 100);
-        m_audioTrackINP->getInputNode()->m_allowedChars = "-0123456789";
+        m_audioTrackINP->addChild(SimpleTextArea::create("Track:\n \n \n ", "bigFont.fnt", 0.5f, 180.f), 0, 100);
+        m_audioTrackINP->getChildByType<SimpleTextArea>()->setAnchorPoint({ 0.f, 0.3f });
+        m_audioTrackINP->setFilter("-0123456789");
         popup->m_buttonMenu->addChild(m_audioTrackINP);
         //coins replacer
         auto coinitem = CCMenuItemExt::createSpriteExtraWithFrameName(
@@ -546,10 +557,10 @@ class $modify(MLE_EditorUI, EditorUI) {
         popup->m_buttonMenu->addChild(reset);
     };
     void onSettings(cocos2d::CCObject * sender) {
+        if (isMainLevel(m_editorLayer->m_level)) {
+            scheduleOnce(schedule_selector(MLE_EditorUI::openSetupWindows), 0.1f);
+        }
         EditorUI::onSettings(sender);
-        if (m_editorLayer->m_level->m_levelType == GJLevelType::Main) scheduleOnce(
-            schedule_selector(MLE_EditorUI::openSetupWindows), 0.f
-        );
     }
 };
 
@@ -563,7 +574,11 @@ void openListingEditor() {
     pGJLevelList->m_listDesc = ZipUtils::base64URLEncode(
         "This list dummy have <cg>realtime sync</c> with\nreal <cy>config file</c> of mod.");
     pGJLevelList->m_listName = "LEVEL SELECT PAGE LIST";
-    for (auto id : list) pGJLevelList->addLevelToList(LevelTools::getLevel(id, 0));
+    for (auto id : list) {
+        auto level = GameLevelManager::get()->getMainLevel(id, 0);
+        level->m_levelType = GJLevelType::Main;
+        pGJLevelList->addLevelToList(level);
+    }
 
     Ref layer = LevelListLayer::create(pGJLevelList);
     switchToScene(layer);
@@ -588,7 +603,7 @@ void openListingEditor() {
                 auto newb = CCMenuItemExt::createSpriteExtraWithFrameName(
                     "GJ_newBtn_001.png", 0.7f, [layer](void*) {
                         Ref input = TextInput::create(310.f, "ID");
-                        input->getInputNode()->m_allowedChars = "-0123456789";
+                        input->setFilter("-0123456789");
                         input->setPositionY(42.000f);
                         auto popup = createQuickPopup(
                             "Add ID:", "\n ", "Add", nullptr,
@@ -612,8 +627,7 @@ void openListingEditor() {
             return false;
         }
     );
-    if (auto a = layer->getChildByType<CCTextInputNode>(0))
-        a->setTouchEnabled(false);
+    if (auto a = layer->getChildByType<CCTextInputNode>(0)) a->setTouchEnabled(false);
     //updaterrr
     layer->runAction(CCRepeatForever::create(CCSequence::create(
         CCDelayTime::create(0.1f),
@@ -626,10 +640,8 @@ void openListingEditor() {
                 );
                 auto liststr = createListingIDs(list);
                 file::writeString(path.c_str(), liststr.c_str()).err();
-                if (auto l = layer->getChildByType<CCLabelBMFont>(0))
-                    l->setString(liststr.c_str());
-                if (auto l = layer->getChildByType<LoadingCircle>(0))
-                    l->setVisible(false);
+                if (auto l = layer->getChildByType<CCLabelBMFont>(0)) l->setString(liststr.c_str());
+                if (auto l = layer->getChildByType<LoadingCircle>(0)) l->setVisible(false);
             }
         ),
         nullptr
@@ -654,5 +666,82 @@ $on_mod(Loaded) {
         }
     ).leak();
 }
+
+#include <Geode/modify/LevelCell.hpp>
+class $modify(MLE_LevelCell, LevelCell) {
+    void onClick(cocos2d::CCObject * sender) {
+        if (m_level && m_level->m_levelType == GJLevelType::Main && !m_cellMode) {
+            createQuickPopup(
+                "Edit Main Level"
+                ,
+                "Open <cy>" + m_level->m_levelName + "</c> in the <cg>Level Editor</c>?\n"
+                "Changes will be saved to this mod's config files:\n"
+                "<cl>levels/" + std::to_string(m_level->m_levelID) + ".object.ini</c>\n"
+                "<cl>levels/" + std::to_string(m_level->m_levelID) + ".string.txt</c>"
+                ,
+                "Cancel", "Open Editor",
+                [this](auto, auto btn2) {
+                    if (!btn2) return;
+                    auto level = GameLevelManager::get()->getMainLevel(m_level->m_levelID, 0);
+                    level->setUserObject("main-level", GameLevelManager::get());
+                    level->m_levelType = GJLevelType::Editor;
+                    cocos::switchToScene(LevelEditorLayer::create(level, 0), 0);
+                }
+            );
+            return;
+        }
+        LevelCell::onClick(sender);
+    };
+};
+
+#endif//EXCLUDE_MLC_INGAME_CONFIG_SUPPORT
+
+#ifndef EXCLUDE_MLC_SECRET_COINS_HACK
+#include <Geode/modify/GameObject.hpp>
+class $modify(MLE_GameObjectExt, GameObject) {
+    void customSetup(float) { customSetup(); };
+    void customSetup() {
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectID"))) this->m_objectID = v->getTag();
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_objectType"))) this->m_objectType = (GameObjectType)v->getTag();
+        if (auto v = this->getUserObject("org-"_spr + std::string("m_savedObjectType"))) this->m_savedObjectType = (GameObjectType)v->getTag();
+        GameObject::customSetup();
+    };
+    void PlayLayerCustomSetup(float) {
+        if (auto play = typeinfo_cast<PlayLayer*>(this)) {
+            auto lvl = play->m_level;
+            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_localOrSaved"))) lvl->m_localOrSaved = v->getTag();
+            if (auto v = lvl->getUserObject("org-"_spr + std::string("m_levelType"))) lvl->m_levelType = (GJLevelType)v->getTag();
+        }
+    };
+    static auto valTagContainerObj(int val) { auto a = new CCObject(); a->autorelease(); a->setTag(val); return a; };
+    static GameObject* objectFromVector(
+        std::vector<std::string>&p0, std::vector<void*>&p1, GJBaseGameLayer * p2, bool p3
+    ) {
+        auto rtn = GameObject::objectFromVector(p0, p1, p2, p3);
+        if (!rtn) return rtn;
+        if (auto editor = typeinfo_cast<LevelEditorLayer*>(p2)) {
+            if (rtn) if (rtn->m_objectID == 142) {
+                rtn->setUserObject("org-"_spr + std::string("m_objectID"), valTagContainerObj(rtn->m_objectID));
+                rtn->m_objectID = 1329; //user coin object id
+                rtn->setUserObject("org-"_spr + std::string("m_objectType"), valTagContainerObj((int)rtn->m_objectType));
+                rtn->m_objectType = GameObjectType::UserCoin; //user coin object
+                rtn->setUserObject("org-"_spr + std::string("m_savedObjectType"), valTagContainerObj((int)rtn->m_savedObjectType));
+                rtn->m_savedObjectType = GameObjectType::UserCoin; //what
+                rtn->scheduleOnce(schedule_selector(MLE_GameObjectExt::customSetup), 0.f);
+            }
+        };
+        if (auto play = typeinfo_cast<PlayLayer*>(p2)) {
+            if (rtn) if (rtn->m_objectID == 142) {
+                auto lvl = play->m_level;
+                lvl->setUserObject("org-"_spr + std::string("m_localOrSaved"), valTagContainerObj(lvl->m_localOrSaved));
+                lvl->m_localOrSaved = true;
+                lvl->setUserObject("org-"_spr + std::string("m_levelType"), valTagContainerObj((int)lvl->m_levelType));
+                lvl->m_levelType = GJLevelType::Main;
+                play->scheduleOnce(schedule_selector(MLE_GameObjectExt::PlayLayerCustomSetup), 0.f);
+            }
+        }
+        return rtn;
+    }
+};
 
 #endif//EXCLUDE_MLC_INGAME_CONFIG_SUPPORT

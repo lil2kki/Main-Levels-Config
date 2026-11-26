@@ -1,16 +1,14 @@
 # Main Levels Config
 
-![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=downloads) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=version) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=geode_version) ![—](https://api.geode-sdk.org/v1/mods/lil2kki.main-levels-config/status_badge?stat=gd_version) 
-
 Edit main levels at runtime based on config.
 
 So.. watch [config dir](https://docs.geode-sdk.org/functions/geode/dirs/getModConfigDir) yea. Or basic [tutorial video](https://youtu.be/VTVOser006E).
 
 ## Tools i think you would needy for:
 
-Useful tools by this mod and reused **Level Edit** hack from <cb>Eclipse</c> allows you to edit main levels, from me goes full config saving support:
+**Main Levels Config** allows you load and save secret coins (that disappear without hack) but this **add them to create tab**:
 
-<mod:omgrod.rods-fangame-tools>
+<mod:legowiifun.unlisted_objects_in_editor>
 
 ## Custom audio assets
 
@@ -39,7 +37,7 @@ Each main level can have its own config file: `levels/<id>.object.ini`
 
 **Supported fields** (section `[GJGameLevel]`):
 - `m_levelName` - level display name
-- `m_difficulty` - 0=Auto,1=Easy,2=Normal,3=Hard,4=Harder,5=Insane,6=Demon
+- `m_difficulty` - 0=Auto,1=Easy,2=Normal ... 5=Insane,6=Demon
 - `m_stars` - star count
 - `m_audioTrack` / `m_songID` - audio track ID
 - `m_songIDs`, `m_sfxIDs` - lists of custom song/sfx IDs
